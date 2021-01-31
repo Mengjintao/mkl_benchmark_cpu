@@ -35,7 +35,6 @@ static float *A, *B, *C;
 
 int main(int argc, char **argv)
 {
-	printf("%d\n", argc);	
 	int M = atoi(argv[1]);
 	int K = atoi(argv[2]);
 	int N = atoi(argv[3]);
@@ -60,14 +59,12 @@ int main(int argc, char **argv)
 		printf("Could not allocate matrix A\n");
 		return -1;
 	}
-	printf("Alloc A\n");
 
 	B = _mm_malloc(NumB*Bytes, 4);
 	if (B == NULL) {
 		printf("Could not allocate matrix B\n");
 		return -1;
 	}
-	printf("Alloc B\n");
 
 	C = _mm_malloc(NumC*Bytes, 4);
 	if (C == NULL) {
@@ -75,7 +72,6 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	printf("Alloc C\n");
 	/* Initialize the matrices */
 	for (i = 0; i < NumA; i++) 
 		A[i] = 1.0*i; 
@@ -84,17 +80,16 @@ int main(int argc, char **argv)
 	for (i = 0; i < NumC; i++) 
 		C[i] = 0.0;
 
-	printf("Init A B C\n");
 	/* Typical host/CPU call to SGEMM */
 	printf("Computing SGEMM on the host...\n");
 	t1 = dsecnd();
 	printf("Mutiply A %dX%d and B %dX%d ...\n", M, K, K, N);
-	for(i=0; i<1; i++)
+	for(i=0; i<20; i++)
 		sgemm(&transa, &transb, &M, &N, &K, &alpha, A, &M, B, &K, &beta, C, &M);
 
 	t2 = dsecnd();
 	t3 = t2 - t1;
-	printf("Total time computing DGEMM on the host: %.2f secs\n", t3);
+	printf("Total time computing DGEMM on the host: %.2f msecs\n", t3/20*1000);
 
 #if 0
     FILE *fp;
