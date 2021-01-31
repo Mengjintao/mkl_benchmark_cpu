@@ -90,6 +90,7 @@ int main(int argc, char **argv)
 	t2 = dsecnd();
 	t3 = t2 - t1;
 	printf("Total time computing DGEMM on the host: %.2f msecs\n", t3/20*1000);
+	printf("GFLOPS of SGEMM on the host: %.2f GFLOPS\n", (2.0*M*N*K/(1024*1024*1024))/(t3/20));
 
 #if 0
     FILE *fp;
