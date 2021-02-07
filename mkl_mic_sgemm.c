@@ -24,14 +24,28 @@
 /* System headers */
 #include <stdio.h>
 #include <stdlib.h>
-#include <malloc.h>
+#include <mm_malloc.h>
+//#include <malloc.h>
 #include <stdint.h>
 #include <omp.h>
 #include "mkl.h"
 /* Timing */
 double dsecnd();
 /* Matrices */
-static float *A, *B, *C;
+static float *A, *B, *C, *R;
+
+void PrintMatrix(float *A, int m, int n)
+{
+	printf("Matrix %dX%d:\n", m,n);
+	int i,j;
+	for(i=0;i<m;i++)
+	{
+		for(j=0;j<n;j++)
+			printf("%.3f ", A[i*n+j]);
+		printf("\n");
+	}
+}
+
 
 int main(int argc, char **argv)
 {
@@ -47,7 +61,7 @@ int main(int argc, char **argv)
 	float alpha = 1.0, beta = 1.0; /* Scaling factors */
 	char transa = 'N', transb = 'N'; /* Transposition options */
 
-	int i, j; /* Counters */
+	int i, j, t; /* Counters */
 	double t1, t2, t3, tMic1, tMic2, tMic; /* Timers */
 
 //	matrix_elements = LD * N;
@@ -67,6 +81,7 @@ int main(int argc, char **argv)
 	}
 
 	C = _mm_malloc(NumC*Bytes, 4);
+	R = _mm_malloc(NumC*Bytes, 4);
 	if (C == NULL) {
 		printf("Could not allocate matrix C\n");
 		return -1;
@@ -74,20 +89,39 @@ int main(int argc, char **argv)
 
 	/* Initialize the matrices */
 	for (i = 0; i < NumA; i++) 
-		A[i] = 1.0*i; 
+		A[i] = 1.0; 
 	for (i = 0; i < NumB; i++) 
-		B[i] = 2.0; 
+		B[i] = 1.0; 
 	for (i = 0; i < NumC; i++) 
 		C[i] = 0.0;
+		R[i] = 0.0;
+
+	for(i=0;i<M;i++)	for(j=0;j<N;j++)
+		for(t=0;t<K;t++)
+			R[i*N+j] += A[i*K+t] * B[t*N+j];
 
 	/* Typical host/CPU call to SGEMM */
 	printf("Computing SGEMM on the host...\n");
 	t1 = dsecnd();
 	printf("Mutiply A %dX%d and B %dX%d ...\n", M, K, K, N);
-	for(i=0; i<20; i++)
-		sgemm(&transa, &transb, &M, &N, &K, &alpha, A, &M, B, &K, &beta, C, &M);
+	for(i=0; i<1; i++)
+//		sgemm(&transa, &transb, &M, &N, &K, &alpha, A, &M, B, &K, &beta, C, &M);
+		SGEMM("N", "N", &M, &N, &K, &alpha, A, &M, B, &K, &beta, C, &N);
 
 	t2 = dsecnd();
+
+	PrintMatrix(A,M,K);
+	PrintMatrix(B,K,N);
+	PrintMatrix(C,M,N);
+	PrintMatrix(R,M,N);
+
+/*
+	for(i=0;i<M;i++)
+	{	
+		for(j=0;j<N;j++)
+//		if(fabs(R[i*N+j] - C[i*N+j]) >1e-6) 
+//			printf("%d %d %f %f\n", i,j,R[i*N+j], C[i*N+j]);
+*/
 	t3 = t2 - t1;
 	printf("Total time computing DGEMM on the host: %.2f msecs\n", t3/20*1000);
 	printf("GFLOPS of SGEMM on the host: %.2f GFLOPS\n", (2.0*M*N*K/(1024*1024*1024))/(t3/20));
